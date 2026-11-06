@@ -49,14 +49,15 @@
         <div id="map"></div>
         <div class="legend">
             <h4>สถานะสถานีตรวจอากาศ</h4>
-            <p>🟢 ทำงานปกติ</p>
-            <p>🔴 ขัดข้อง / ขาดการติดต่อ</p>
+            <p>ทำงานปกติ</p>
+            <p>เซ็นเซอร์ขัดข้อง (ข้อมูลหายบางส่วน)</p>
+            <p>ขัดข้อง / ขาดการติดต่อ</p>
             <div class="update-time" id="last-update">กำลังเชื่อมต่อข้อมูล...</div>
         </div>
     </div>
 
     <div id="sidebar">
-        <h2>⚠️ สถานีที่ต้องเฝ้าระวัง</h2>
+        <h2>สถานีที่ต้องเฝ้าระวัง</h2>
         <div id="issue-list">
             <p style="text-align: center; color: #666;">กำลังโหลดข้อมูล...</p>
         </div>
@@ -91,7 +92,15 @@
                         iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
                     });
 
-                    const statusText = stn.error_detail || (stn.has_error ? '⚠️ พบปัญหา' : '✅ ปกติ');
+                    // ลบอีโมจิ ⚠️ และ ✅ ออกจากการแสดงผล
+                    let statusText = stn.error_detail;
+                    if (!statusText) {
+                        statusText = stn.has_error ? 'พบปัญหา' : 'ปกติ';
+                    } else {
+                         // ลบอีโมจิจากข้อความที่ส่งมาจาก backend ถ้ามีหลงเหลืออยู่
+                         statusText = statusText.replace(/[🔴🟡🟢⚠️✅]/g, '').trim();
+                    }
+
                     const popupHTML = `<b>${stn.name}</b><br>ID: ${stn.id}<br>สถานะ: ${statusText}`;
                     
                     L.marker([stn.lat, stn.lon], {icon: icon})
@@ -101,12 +110,12 @@
                     if (stn.has_error) {
                         hasIssues = true;
                         
-                        // สร้างข้อความ Metadata (เวลาเกิดเหตุ / ระยะเวลา)
+                        // สร้างข้อความ Metadata (เวลาเกิดเหตุ / ระยะเวลา) โดยลบอีโมจิ ⏰
                         let metaHTML = "";
                         if (stn.issue_time && stn.duration) {
-                            metaHTML = `<span class="issue-meta">⏰ เริ่มขัดข้อง: ${stn.issue_time} (ผ่านมา ${stn.duration})</span>`;
+                            metaHTML = `<span class="issue-meta">เริ่มขัดข้อง: ${stn.issue_time} (ผ่านมา ${stn.duration})</span>`;
                         } else if (stn.issue_time) {
-                            metaHTML = `<span class="issue-meta">⏰ อัปเดตล่าสุด: ${stn.issue_time}</span>`;
+                            metaHTML = `<span class="issue-meta">อัปเดตล่าสุด: ${stn.issue_time}</span>`;
                         }
 
                         const cardHTML = `
@@ -121,7 +130,8 @@
                 });
                 
                 if (!hasIssues) {
-                    issueListContainer.innerHTML = `<div class="no-issues">✨ ทุกสถานีทำงานปกติ</div>`;
+                    // ลบอีโมจิ ✨
+                    issueListContainer.innerHTML = `<div class="no-issues">ทุกสถานีทำงานปกติ</div>`;
                 }
 
                 document.getElementById('last-update').innerHTML = `อัปเดตล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
