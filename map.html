@@ -16,7 +16,6 @@
             --legend-bg: rgba(255, 255, 255, 0.95);
         }
 
-        /* Dark Mode Variables */
         body.dark-mode {
             --bg-color: #212529;
             --text-color: #e9ecef;
@@ -29,7 +28,6 @@
 
         body { font-family: 'Tahoma', sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background: var(--bg-color); color: var(--text-color); transition: all 0.3s; }
         
-        /* Left: Map */
         #map-container { flex: 7; position: relative; }
         #map { height: 100%; width: 100%; }
         
@@ -42,16 +40,14 @@
         .legend h4 { margin: 0 0 10px 0; font-size: 16px; }
         .legend p { margin: 5px 0; font-size: 14px; display: flex; align-items: center; }
         
-        .color-dot {
-            height: 12px; width: 12px; border-radius: 50%; display: inline-block; margin-right: 8px;
-        }
+        .color-dot { height: 12px; width: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; }
         .color-dot.green { background-color: #28a745; }
         .color-dot.yellow { background-color: #ffc107; }
         .color-dot.red { background-color: #dc3545; }
         
         .update-time { font-size: 12px; color: var(--meta-color); margin-top: 10px; border-top: 1px solid var(--meta-border); padding-top: 5px;}
 
-        /* Theme Toggle Button */
+        /* ปุ่มสลับโหมด มืด-สว่าง */
         .theme-toggle {
             position: absolute; top: 20px; right: 20px;
             z-index: 1000; background: var(--card-bg); color: var(--text-color);
@@ -60,31 +56,26 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: all 0.3s;
         }
         .theme-toggle:hover { filter: brightness(0.9); }
+        
+        /* ปรับตำแหน่งปุ่มสลับเลเยอร์แผนที่ของ Leaflet ไม่ให้ซ้อนกับปุ่มโหมดมืด */
+        .leaflet-control-layers {
+            margin-top: 60px !important; 
+        }
 
-        /* Right: Sidebar List */
         #sidebar { 
-            flex: 3; 
-            background: var(--bg-color); 
-            border-left: 1px solid var(--sidebar-border); 
-            padding: 20px; 
-            overflow-y: auto; 
-            transition: all 0.3s;
+            flex: 3; background: var(--bg-color); border-left: 1px solid var(--sidebar-border); 
+            padding: 20px; overflow-y: auto; transition: all 0.3s;
         }
         #sidebar h2 { font-size: 18px; margin-top: 0; color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 5px;}
         
         .issue-card {
-            background: var(--card-bg);
-            border-radius: 5px;
-            padding: 10px 15px;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            border-left: 4px solid #dc3545;
-            transition: all 0.3s;
+            background: var(--card-bg); border-radius: 5px; padding: 10px 15px;
+            margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 4px solid #dc3545; transition: all 0.3s;
         }
         .issue-card.red { border-left-color: #dc3545; }
         .issue-card.yellow { border-left-color: #ffc107; }
         
-        /* สลับสีตัวหนังสือในกล่องเหลืองให้เข้ากับธีมเข้ม/สว่าง */
         body:not(.dark-mode) .issue-card.yellow h4 { color: #856404; }
         body.dark-mode .issue-card.yellow h4 { color: #ffda6a; }
         
@@ -109,7 +100,7 @@
     </div>
 
     <div id="sidebar">
-        <h2>⚠️ สถานีที่ต้องเฝ้าระวัง</h2>
+        <h2>⚠️ สถานี AWS ที่ต้องเฝ้าระวัง</h2>
         <div id="issue-list">
             <p style="text-align: center; color: var(--meta-color);">กำลังโหลดข้อมูล...</p>
         </div>
@@ -117,7 +108,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ระบบจำธีม
+        // ระบบจำธีม มืด-สว่าง
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-mode');
             document.querySelector('.theme-toggle').innerHTML = '☀️ โหมดสว่าง';
@@ -130,12 +121,28 @@
             document.querySelector('.theme-toggle').innerHTML = isDark ? '☀️ โหมดสว่าง' : '🌙 โหมดมืด';
         }
 
-        const map = L.map('map').setView([8.0, 99.5], 7);
-        
-        // ใช้ Layer แผนที่แบบ Standard (รองรับ Dark mode เล็กน้อยเวลาสลับธีม)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // 1. กำหนดรูปแบบเลเยอร์แผนที่ (แผนที่ปกติ vs ดาวเทียม)
+        const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
+        });
+        
+        const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '&copy; Esri'
+        });
+
+        // 2. สร้างแผนที่และตั้งค่า Default เป็น Street Map
+        const map = L.map('map', {
+            center: [8.0, 99.5],
+            zoom: 7,
+            layers: [streetMap]
+        });
+
+        // 3. เพิ่มปุ่ม Control มุมขวาบนเพื่อสลับแผนที่
+        const baseMaps = {
+            "🗺️ แผนที่ปกติ": streetMap,
+            "🌍 ดาวเทียม": satelliteMap
+        };
+        L.control.layers(baseMaps).addTo(map);
 
         let markersLayer = L.layerGroup().addTo(map);
 
@@ -159,15 +166,12 @@
                         iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
                     });
 
-                    // ใส่ อีโมจิ นำหน้าข้อความแสดงผล
                     let statusText = stn.error_detail;
                     if (!statusText) {
                         statusText = stn.has_error ? '⚠️ พบปัญหา' : '✅ ปกติ';
                     } else if (markerColor === 'yellow') {
-                        // ดักกรณีเหลือง ให้ใส่อีโมจิเตือน
                         statusText = "⚠️ " + statusText.replace(/[🔴🟡🟢⚠️✅]/g, '').trim();
                     } else if (markerColor === 'red') {
-                        // ดักกรณีแดง ให้ใส่อีโมจิออฟไลน์
                         statusText = "🔴 " + statusText.replace(/[🔴🟡🟢⚠️✅]/g, '').trim();
                     }
 
