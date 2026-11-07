@@ -26,6 +26,14 @@
             --legend-bg: rgba(33, 37, 41, 0.95);
         }
 
+        /* เมื่ออยู่ในโหมดมืด ให้กลับสีเลเยอร์แผนที่ (แต่ไม่กลับสีของหมุด/Popup) */
+        body.dark-mode .leaflet-layer,
+        body.dark-mode .leaflet-control-zoom-in,
+        body.dark-mode .leaflet-control-zoom-out,
+        body.dark-mode .leaflet-control-attribution {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+
         body { font-family: 'Tahoma', sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background: var(--bg-color); color: var(--text-color); transition: all 0.3s; }
         
         #map-container { flex: 7; position: relative; }
@@ -57,7 +65,6 @@
         }
         .theme-toggle:hover { filter: brightness(0.9); }
         
-        /* ปรับตำแหน่งปุ่มสลับเลเยอร์แผนที่ของ Leaflet ไม่ให้ซ้อนกับปุ่มโหมดมืด */
         .leaflet-control-layers {
             margin-top: 60px !important; 
         }
@@ -65,8 +72,27 @@
         #sidebar { 
             flex: 3; background: var(--bg-color); border-left: 1px solid var(--sidebar-border); 
             padding: 20px; overflow-y: auto; transition: all 0.3s;
+            display: flex; flex-direction: column;
         }
-        #sidebar h2 { font-size: 18px; margin-top: 0; color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 5px;}
+        
+        /* 📌 CSS สำหรับส่วนสรุปตัวเลขด้านขวาบน */
+        .summary-dashboard {
+            display: flex; justify-content: space-between; margin-bottom: 20px;
+            gap: 10px;
+        }
+        .stat-card {
+            background: var(--card-bg); border-radius: 8px; padding: 10px;
+            flex: 1; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border: 1px solid var(--sidebar-border);
+        }
+        .stat-card h5 { margin: 0 0 5px 0; font-size: 13px; color: var(--meta-color); font-weight: normal; }
+        .stat-card h2 { margin: 0; font-size: 24px; font-weight: bold; }
+        
+        .stat-normal h2 { color: #28a745; }
+        .stat-warning h2 { color: #ffc107; }
+        .stat-offline h2 { color: #dc3545; }
+        
+        #sidebar h2.title { font-size: 18px; margin-top: 0; color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 5px;}
         
         .issue-card {
             background: var(--card-bg); border-radius: 5px; padding: 10px 15px;
@@ -83,6 +109,8 @@
         .issue-card p { margin: 0 0 5px 0; font-size: 13px; color: var(--text-color); opacity: 0.8; }
         .issue-meta { font-size: 11px; color: var(--meta-color); display: block; margin-top: 5px; border-top: 1px dashed var(--meta-border); padding-top: 5px;}
         .no-issues { text-align: center; color: #28a745; margin-top: 50px; font-weight: bold; }
+        
+        #issue-list { flex-grow: 1; overflow-y: auto; }
 
     </style>
 </head>
@@ -100,7 +128,23 @@
     </div>
 
     <div id="sidebar">
-        <h2>⚠️ สถานี AWS ที่ต้องเฝ้าระวัง</h2>
+        <!-- 📌 เพิ่มส่วน Dashboard สรุปตัวเลข -->
+        <div class="summary-dashboard">
+            <div class="stat-card stat-normal">
+                <h5>✅ ปกติ</h5>
+                <h2 id="count-normal">-</h2>
+            </div>
+            <div class="stat-card stat-warning">
+                <h5>⚠️ มีปัญหา</h5>
+                <h2 id="count-warning">-</h2>
+            </div>
+            <div class="stat-card stat-offline">
+                <h5>🔴 ออฟไลน์</h5>
+                <h2 id="count-offline">-</h2>
+            </div>
+        </div>
+        
+        <h2 class="title">⚠️ สถานี AWS ที่ต้องเฝ้าระวัง</h2>
         <div id="issue-list">
             <p style="text-align: center; color: var(--meta-color);">กำลังโหลดข้อมูล...</p>
         </div>
@@ -108,7 +152,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ระบบจำธีม มืด-สว่าง
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-mode');
             document.querySelector('.theme-toggle').innerHTML = '☀️ โหมดสว่าง';
@@ -121,7 +164,6 @@
             document.querySelector('.theme-toggle').innerHTML = isDark ? '☀️ โหมดสว่าง' : '🌙 โหมดมืด';
         }
 
-        // 1. กำหนดรูปแบบเลเยอร์แผนที่ (แผนที่ปกติ vs ดาวเทียม)
         const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap'
         });
@@ -130,14 +172,12 @@
             attribution: '&copy; Esri'
         });
 
-        // 2. สร้างแผนที่และตั้งค่า Default เป็น Street Map
         const map = L.map('map', {
             center: [8.0, 99.5],
             zoom: 7,
             layers: [streetMap]
         });
 
-        // 3. เพิ่มปุ่ม Control มุมขวาบนเพื่อสลับแผนที่
         const baseMaps = {
             "🗺️ แผนที่ปกติ": streetMap,
             "🌍 ดาวเทียม": satelliteMap
@@ -155,10 +195,20 @@
                 markersLayer.clearLayers();
                 const issueListContainer = document.getElementById('issue-list');
                 issueListContainer.innerHTML = ""; 
+                
+                // 📌 ตัวแปรนับสถิติ
+                let countNormal = 0;
+                let countWarning = 0;
+                let countOffline = 0;
                 let hasIssues = false;
 
                 stations.forEach(stn => {
                     const markerColor = stn.marker_status || (stn.has_error ? 'red' : 'green');
+                    
+                    // อัปเดตตัวเลขนับสถิติ
+                    if (markerColor === 'green') countNormal++;
+                    else if (markerColor === 'yellow') countWarning++;
+                    else if (markerColor === 'red') countOffline++;
                     
                     const icon = new L.Icon({
                         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${markerColor}.png`,
@@ -201,6 +251,11 @@
                         issueListContainer.insertAdjacentHTML('beforeend', cardHTML);
                     }
                 });
+                
+                // 📌 อัปเดตตัวเลขขึ้นหน้าจอ
+                document.getElementById('count-normal').textContent = countNormal;
+                document.getElementById('count-warning').textContent = countWarning;
+                document.getElementById('count-offline').textContent = countOffline;
                 
                 if (!hasIssues) {
                     issueListContainer.innerHTML = `<div class="no-issues">✨ ทุกสถานีทำงานปกติ</div>`;
