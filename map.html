@@ -35,7 +35,7 @@
 
         body { font-family: 'Tahoma', sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background: var(--bg-color); color: var(--text-color); transition: all 0.3s; }
         
-        #map-container { flex: 7; position: relative; }
+        #map-container { flex: 7; position: relative; height: 100%; }
         #map { height: 100%; width: 100%; }
         
         .legend {
@@ -47,7 +47,7 @@
         .legend h4 { margin: 0 0 10px 0; font-size: 16px; }
         .legend p { margin: 5px 0; font-size: 14px; display: flex; align-items: center; }
         
-        .color-dot { height: 12px; width: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .color-dot { height: 12px; width: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; flex-shrink: 0; }
         .color-dot.green { background-color: #28a745; }
         .color-dot.yellow { background-color: #ffc107; }
         .color-dot.red { background-color: #dc3545; }
@@ -70,10 +70,9 @@
         #sidebar { 
             flex: 3; background: var(--bg-color); border-left: 1px solid var(--sidebar-border); 
             padding: 20px; overflow-y: auto; transition: all 0.3s;
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; box-sizing: border-box;
         }
 
-        /* 📌 CSS สำหรับ Header ชื่อระบบ */
         .sidebar-header {
             text-align: center;
             margin-bottom: 20px;
@@ -110,7 +109,9 @@
             background: var(--card-bg); border-radius: 5px; padding: 10px 15px;
             margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             border-left: 4px solid #dc3545; transition: all 0.3s;
+            cursor: pointer;
         }
+        .issue-card:hover { transform: translateY(-1px); }
         .issue-card.red { border-left-color: #dc3545; }
         .issue-card.yellow { border-left-color: #ffc107; }
         
@@ -124,6 +125,74 @@
         
         #issue-list { flex-grow: 1; overflow-y: auto; }
 
+        /* 📱 ปรับแต่งสำหรับหน้าจอมือถือและแท็บเล็ตแนวตั้ง */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                height: 100dvh;
+            }
+            #map-container {
+                flex: none;
+                height: 55%;
+                width: 100%;
+            }
+            #sidebar {
+                flex: none;
+                height: 45%;
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid var(--sidebar-border);
+                padding: 12px 15px;
+            }
+            .sidebar-header {
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+            }
+            .sidebar-header h1 {
+                font-size: 18px;
+            }
+            .summary-dashboard {
+                margin-bottom: 12px;
+                gap: 6px;
+            }
+            .stat-card {
+                padding: 6px;
+            }
+            .stat-card h5 {
+                font-size: 11px;
+            }
+            .stat-card h2 {
+                font-size: 18px;
+            }
+            .legend {
+                bottom: 10px;
+                left: 10px;
+                padding: 8px 10px;
+                max-width: 190px;
+            }
+            .legend h4 {
+                font-size: 12px;
+                margin-bottom: 4px;
+            }
+            .legend p {
+                font-size: 11px;
+                margin: 2px 0;
+            }
+            .update-time {
+                font-size: 10px;
+                margin-top: 5px;
+                padding-top: 4px;
+            }
+            .theme-toggle {
+                top: 10px;
+                right: 10px;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            .leaflet-control-layers {
+                margin-top: 48px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -131,21 +200,19 @@
         <div id="map"></div>
         <button class="theme-toggle" onclick="toggleTheme()">🌙 โหมดมืด</button>
         <div class="legend">
-            <h4>สถานะสถานีตรวจอากาศอัตโนมัติ</h4>
+            <h4>สถานะสถานีตรวจอากาศ</h4>
             <p><span class="color-dot green"></span> ทำงานปกติ</p>
-            <p><span class="color-dot yellow"></span> เซ็นเซอร์ขัดข้อง (ข้อมูลหายบางส่วน)</p>
-            <p><span class="color-dot red"></span> ขัดข้อง / ขาดการติดต่อ</p>
+            <p><span class="color-dot yellow"></span> เซ็นเซอร์ขัดข้อง</p>
+            <p><span class="color-dot red"></span> ขาดการติดต่อ</p>
             <div class="update-time" id="last-update">กำลังเชื่อมต่อข้อมูล...</div>
         </div>
     </div>
 
     <div id="sidebar">
-        <!-- 📌 Header ชื่อระบบ -->
         <div class="sidebar-header">
             <h1>Smart AWS Monitor</h1>
         </div>
 
-        <!-- 📌 ส่วน Dashboard สรุปตัวเลข -->
         <div class="summary-dashboard">
             <div class="stat-card stat-normal">
                 <h5>🟢 ปกติ</h5>
@@ -202,6 +269,14 @@
         L.control.layers(baseMaps).addTo(map);
 
         let markersLayer = L.layerGroup().addTo(map);
+        let stationMarkers = {};
+
+        function focusStation(lat, lon, id) {
+            map.flyTo([lat, lon], 11, { duration: 0.8 });
+            if (stationMarkers[id]) {
+                stationMarkers[id].openPopup();
+            }
+        }
 
         async function fetchMapData() {
             try {
@@ -210,6 +285,7 @@
                 const stations = await response.json();
 
                 markersLayer.clearLayers();
+                stationMarkers = {};
                 const issueListContainer = document.getElementById('issue-list');
                 issueListContainer.innerHTML = ""; 
                 
@@ -242,9 +318,10 @@
 
                     const popupHTML = `<b>${stn.name}</b><br>ID: ${stn.id}<br>สถานะ: ${statusText}`;
                     
-                    L.marker([stn.lat, stn.lon], {icon: icon})
+                    const marker = L.marker([stn.lat, stn.lon], {icon: icon})
                         .bindPopup(popupHTML)
                         .addTo(markersLayer);
+                    stationMarkers[stn.id] = marker;
 
                     if (stn.has_error) {
                         hasIssues = true;
@@ -257,7 +334,7 @@
                         }
 
                         const cardHTML = `
-                            <div class="issue-card ${markerColor}">
+                            <div class="issue-card ${markerColor}" onclick="focusStation(${stn.lat}, ${stn.lon}, '${stn.id}')">
                                 <h4>${stn.name} (ID: ${stn.id})</h4>
                                 <p>${statusText}</p>
                                 ${metaHTML}
