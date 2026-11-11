@@ -277,7 +277,7 @@
         <div class="legend">
             <h4>สถานะสถานีตรวจอากาศ</h4>
             <p><span class="color-dot green"></span> ทำงานปกติ</p>
-            <p><span class="color-dot yellow"></span> เซ็นเซอร์ผิดปกติ/ข้อมูลหาย</p>
+            <p><span class="color-dot yellow"></span> เซ็นเซอร์ผิดปกติ (ค่าหาย/ค้าง/ฝนตัน)</p>
             <p><span class="color-dot red"></span> ขาดการติดต่อ (Offline)</p>
             <div class="update-time" id="last-update">กำลังเชื่อมต่อข้อมูล...</div>
         </div>
@@ -437,19 +437,28 @@
             return `${diffMins} นาที`;
         }
 
+        function matchesSearchQuery(stn, q) {
+            if (!q) return true;
+            const idStr = String(stn.id).trim().toLowerCase();
+            const nameStr = String(stn.name).toLowerCase();
+            // ถ้าพิมพ์ตัวเลขล้วน ให้เช็กรหัสสถานีที่ตรงกันเป๊ะ (เช่น พิมพ์ 29 ไม่ให้ติด 3929)
+            if (/^\d+$/.test(q)) {
+                return idStr === q;
+            }
+            return nameStr.includes(q) || idStr === q;
+        }
+
+        function matchesStatusFilter(stn) {
+            const markerColor = stn.marker_status || (stn.has_error ? 'red' : 'green');
+            if (currentFilter === 'issues') return Boolean(stn.has_error);
+            if (currentFilter === 'all') return true;
+            return markerColor === currentFilter;
+        }
+
         function getFilteredStations() {
             const q = document.getElementById('station-search').value.trim().toLowerCase();
             return allStationsData.filter(stn => {
-                const markerColor = stn.marker_status || (stn.has_error ? 'red' : 'green');
-                const matchQuery = !q || String(stn.name).toLowerCase().includes(q) || String(stn.id).toLowerCase().includes(q);
-                if (!matchQuery) return false;
-
-                // ถ้ากำลังพิมพ์ค้นหา ให้ค้นจากทุกสถานีโดยอัตโนมัติ
-                if (q) return true;
-
-                if (currentFilter === 'issues') return stn.has_error;
-                if (currentFilter === 'all') return true;
-                return markerColor === currentFilter;
+                return matchesSearchQuery(stn, q) && matchesStatusFilter(stn);
             });
         }
 
@@ -462,12 +471,9 @@
             const q = document.getElementById('station-search').value.trim().toLowerCase();
             const filteredList = getFilteredStations();
 
-            allStationsData.forEach(stn => {
+            // วาดหมุดบนแผนที่จาก filteredList ชุดเดียวกับ Sidebar เสมอ (หมวดเฝ้าระวังจะแสดงเฉพาะหมุดเหลืองและแดง)
+            filteredList.forEach(stn => {
                 const markerColor = stn.marker_status || (stn.has_error ? 'red' : 'green');
-                const matchQuery = !q || String(stn.name).toLowerCase().includes(q) || String(stn.id).toLowerCase().includes(q);
-                const matchFilter = (currentFilter === 'all' || currentFilter === 'issues') ? true : (markerColor === currentFilter);
-
-                if (!matchQuery || (!q && !matchFilter)) return;
 
                 const icon = new L.Icon({
                     iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${markerColor}.png`,
