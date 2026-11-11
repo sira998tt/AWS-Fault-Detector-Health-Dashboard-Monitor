@@ -484,18 +484,29 @@
                     statusText = "🔴 " + statusText.replace(/[🔴🟡🟢⚠️✅]/g, '').trim();
                 }
 
+                function degToCompass(deg) {
+                    if (deg === null || deg === undefined || isNaN(deg)) return '';
+                    const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+                    return dirs[Math.round(((deg % 360) / 22.5)) % 16];
+                }
+
                 const tempStr = (stn.temp !== null && stn.temp !== undefined) ? `${stn.temp} °C` : '-';
                 const rainStr = (stn.rain !== null && stn.rain !== undefined) ? `${stn.rain} mm` : '-';
                 const rhStr = (stn.rh !== null && stn.rh !== undefined) ? `${stn.rh} %` : '-';
                 const windStr = (stn.wind !== null && stn.wind !== undefined) ? `${stn.wind} knot` : '-';
+                const wdirCompass = degToCompass(stn.wind_dir);
+                const wdirStr = (stn.wind_dir !== null && stn.wind_dir !== undefined) ? `${stn.wind_dir}° ${wdirCompass ? '(' + wdirCompass + ')' : ''}`.trim() : '-';
+                const presStr = (stn.pressure !== null && stn.pressure !== undefined) ? `${stn.pressure} hPa` : '-';
+                const visLine = (stn.vis !== null && stn.vis !== undefined) ? `<br>👁 <b>ทัศนวิสัย:</b> ${stn.vis} m` : '';
                 const timeStr = stn.updated_at ? `<br><small style="color:#777;">🕒 ข้อมูลเวลา: ${stn.updated_at}</small>` : '';
 
                 const popupHTML = `
                     <b>${stn.name}</b> (ID: ${stn.id})<br>
                     สถานะ: ${statusText}
                     <div class="popup-metrics">
-                        🌡 <b>อุณหภูมิ:</b> ${tempStr} &nbsp;|&nbsp; 🌧 <b>ฝนสะสม:</b> ${rainStr}<br>
-                        💧 <b>ความชื้น:</b> ${rhStr} &nbsp;|&nbsp; 💨 <b>ลม:</b> ${windStr}
+                        🌡 <b>อุณหภูมิ:</b> ${tempStr} &nbsp;|&nbsp; 💧 <b>ความชื้น:</b> ${rhStr}<br>
+                        🌧 <b>ฝนสะสม:</b> ${rainStr} &nbsp;|&nbsp; 🧭 <b>ความกด:</b> ${presStr}<br>
+                        💨 <b>ความเร็วลม:</b> ${windStr} &nbsp;|&nbsp; 🚩 <b>ทิศลม:</b> ${wdirStr}${visLine}
                         ${timeStr}
                     </div>
                 `;
@@ -528,14 +539,17 @@
                     }
 
                     const tempTag = (stn.temp !== null && stn.temp !== undefined) ? `<span>🌡 ${stn.temp}°C</span>` : '';
-                    const rainTag = (stn.rain !== null && stn.rain !== undefined) ? `<span>🌧 ฝน ${stn.rain} mm</span>` : '';
                     const rhTag = (stn.rh !== null && stn.rh !== undefined) ? `<span>💧 ${stn.rh}%</span>` : '';
+                    const rainTag = (stn.rain !== null && stn.rain !== undefined) ? `<span>🌧 ${stn.rain} mm</span>` : '';
+                    const presTag = (stn.pressure !== null && stn.pressure !== undefined) ? `<span>🧭 ${stn.pressure} hPa</span>` : '';
+                    const windTag = (stn.wind !== null && stn.wind !== undefined) ? `<span>💨 ${stn.wind} kt</span>` : '';
+                    const wdirTag = (stn.wind_dir !== null && stn.wind_dir !== undefined) ? `<span>🚩 ${stn.wind_dir}°</span>` : '';
 
                     const cardHTML = `
                         <div class="issue-card ${markerColor}" onclick="focusStation(${stn.lat}, ${stn.lon}, '${stn.id}')">
                             <h4>${stn.name} (ID: ${stn.id})</h4>
                             <p>${statusText}</p>
-                            <div class="card-metrics">${tempTag}${rainTag}${rhTag}</div>
+                            <div class="card-metrics">${tempTag}${rhTag}${rainTag}${presTag}${windTag}${wdirTag}</div>
                             ${metaHTML}
                         </div>
                     `;
