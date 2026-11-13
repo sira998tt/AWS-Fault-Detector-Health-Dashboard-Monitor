@@ -185,8 +185,8 @@
         body.dark-mode .issue-card.yellow h4 { color: #ffda6a; }
         
         .issue-card h4 { margin: 0 0 4px 0; font-size: 14px; color: var(--text-color);}
-        .issue-card p { margin: 0 0 4px 0; font-size: 13px; color: var(--text-color); opacity: 0.85; }
-        .card-metrics { font-size: 12px; color: var(--meta-color); margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .issue-card p { margin: 0 0 4px 0; font-size: 13px; color: var(--text-color); opacity: 0.9; line-height: 1.4; }
+        .card-metrics { font-size: 12px; color: var(--meta-color); margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; }
         .issue-meta { font-size: 11px; color: var(--meta-color); display: block; margin-top: 5px; border-top: 1px dashed var(--meta-border); padding-top: 5px;}
         .no-issues { text-align: center; color: #28a745; margin-top: 35px; font-weight: bold; }
         
@@ -199,8 +199,13 @@
             font-size: 13px;
             line-height: 1.5;
         }
+        .leaflet-popup-content {
+            margin: 10px 12px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
 
-        /* 📱 ปรับแต่งสำหรับหน้าจอมือถือและแท็บเล็ตแนวตั้ง */
+        /* 📱 ปรับแต่งสำหรับหน้าจอมือถือ: ให้ Sidebar ทั้งแผงเลื่อนขึ้นลงได้ ไม่ล็อก Header ตายตัวจนเบียดรายการสถานี */
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
@@ -208,64 +213,118 @@
             }
             #map-container {
                 flex: none;
-                height: 52%;
+                height: 44%;
                 width: 100%;
             }
             #sidebar {
                 flex: none;
-                height: 48%;
+                height: 56%;
                 width: 100%;
                 border-left: none;
                 border-top: 2px solid var(--sidebar-border);
-                padding: 10px 14px;
+                padding: 10px 12px 24px 12px;
+                display: block; /* 📌 ให้เนื้อหาทั้งหมดในครึ่งล่างเลื่อนขึ้นลงพร้อมกันได้ จะได้เห็นการ์ดสถานีเต็มจอ */
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            #issue-list {
+                overflow-y: visible;
+                height: auto;
             }
             .sidebar-header {
-                margin-bottom: 8px;
-                padding-bottom: 6px;
-            }
-            .sidebar-header h1 {
-                font-size: 17px;
+                display: none; /* 📌 ซ่อนชื่อหัวข้อใหญ่บนมือถือเพื่อคืนพื้นที่ให้รายการสถานี */
             }
             .summary-dashboard {
                 margin-bottom: 8px;
-                gap: 5px;
+                gap: 6px;
             }
             .stat-card {
-                padding: 5px;
+                padding: 5px 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
             }
             .stat-card h5 {
-                font-size: 11px;
+                font-size: 12px;
+                margin: 0;
             }
             .stat-card h2 {
-                font-size: 17px;
+                font-size: 16px;
+                margin: 0;
+            }
+            .search-filter-box {
+                margin-bottom: 10px;
+                gap: 6px;
+            }
+            #station-search {
+                padding: 7px 30px 7px 10px;
+                font-size: 13px;
+            }
+            .filter-pill {
+                padding: 5px 4px;
+                font-size: 11px;
+            }
+            #sidebar h2.title {
+                font-size: 14px;
+                margin-bottom: 8px;
+                position: sticky;
+                top: -10px;
+                background: var(--bg-color);
+                z-index: 10;
+                padding: 6px 0;
+            }
+            .issue-card {
+                padding: 9px 11px;
+                margin-bottom: 8px;
+            }
+            .issue-card h4 {
+                font-size: 13.5px;
+            }
+            .issue-card p {
+                font-size: 12.5px;
             }
             .legend {
-                bottom: 10px;
-                left: 10px;
-                padding: 8px 10px;
-                max-width: 195px;
+                bottom: 8px;
+                left: 8px;
+                padding: 6px 8px;
+                max-width: 165px;
+                background: var(--legend-bg);
+                opacity: 0.9;
             }
             .legend h4 {
-                font-size: 12px;
-                margin-bottom: 4px;
+                display: none;
             }
             .legend p {
-                font-size: 11px;
+                font-size: 10.5px;
                 margin: 2px 0;
             }
+            .color-dot {
+                height: 9px;
+                width: 9px;
+                margin-right: 5px;
+            }
             .update-time {
-                font-size: 10px;
-                margin-top: 5px;
-                padding-top: 4px;
+                font-size: 9.5px;
+                margin-top: 3px;
+                padding-top: 3px;
             }
             .theme-toggle {
-                top: 10px;
-                right: 10px;
-                padding: 6px 12px;
-                font-size: 12px;
+                top: 8px;
+                right: 8px;
+                padding: 5px 10px;
+                font-size: 11px;
             }
             .leaflet-control-layers {
-                margin-top: 48px !important;
+                margin-top: 42px !important;
+            }
+            .leaflet-popup-content {
+                font-size: 12px;
+                margin: 8px 10px;
+            }
+            .popup-metrics {
+                font-size: 11.5px;
+                line-height: 1.4;
             }
         }
     </style>
@@ -276,10 +335,10 @@
         <button class="theme-toggle" onclick="toggleTheme()">🌙 โหมดมืด</button>
         <div class="legend">
             <h4>สถานะสถานีตรวจอากาศ</h4>
-            <p><span class="color-dot green"></span> ทำงานปกติ</p>
+            <p><span class="color-dot green"></span> ปกติ</p>
             <p><span class="color-dot yellow"></span> เซ็นเซอร์ผิดปกติ</p>
-            <p><span class="color-dot red"></span> ขาดการติดต่อ (Offline)</p>
-            <div class="update-time" id="last-update">กำลังเชื่อมต่อข้อมูล...</div>
+            <p><span class="color-dot red"></span> ขาดการติดต่อ</p>
+            <div class="update-time" id="last-update">กำลังเชื่อมต่อ...</div>
         </div>
     </div>
 
@@ -306,7 +365,7 @@
         <!-- 🔍 ช่องค้นหาชื่อ/รหัสสถานี และปุ่มตัวกรอง -->
         <div class="search-filter-box">
             <div class="search-input-wrap">
-                <input type="text" id="station-search" placeholder="🔍 ค้นหาชื่อสถานี หรือ รหัส ID (กด Enter เพื่อซูม)..." oninput="onSearchInput()" onkeydown="onSearchKeydown(event)" />
+                <input type="text" id="station-search" placeholder="🔍 ค้นหาชื่อสถานี หรือ รหัส ID..." oninput="onSearchInput()" onkeydown="onSearchKeydown(event)" />
                 <button class="clear-search-btn" id="clear-search" onclick="clearSearch()" title="ล้างคำค้นหา">✕</button>
             </div>
             <div class="filter-pills">
@@ -364,10 +423,16 @@
         let markersLayer = L.layerGroup().addTo(map);
         let stationMarkers = {};
         let allStationsData = [];
-        let currentFilter = 'issues'; // 'issues', 'all', 'green', 'yellow', 'red'
+        let currentFilter = 'issues';
+
+        function isMobileView() {
+            return window.innerWidth <= 768;
+        }
 
         function focusStation(lat, lon, id) {
-            map.flyTo([lat, lon], 11, { duration: 0.8 });
+            // บนมือถือ เลื่อนจุดศูนย์กลางแผนที่ลงเล็กน้อยเพื่อให้กล่อง Popup ที่เด้งด้านบนไม่ชนขอบจอ
+            const targetLat = isMobileView() ? (lat + 0.06) : lat;
+            map.flyTo([targetLat, lon], 11, { duration: 0.8 });
             if (stationMarkers[id]) {
                 stationMarkers[id].openPopup();
             }
@@ -441,7 +506,6 @@
             if (!q) return true;
             const idStr = String(stn.id).trim().toLowerCase();
             const nameStr = String(stn.name).toLowerCase();
-            // ถ้าพิมพ์ตัวเลขล้วน ให้เช็กรหัสสถานีที่ตรงกันเป๊ะ (เช่น พิมพ์ 29 ไม่ให้ติด 3929)
             if (/^\d+$/.test(q)) {
                 return idStr === q;
             }
@@ -470,8 +534,8 @@
 
             const q = document.getElementById('station-search').value.trim().toLowerCase();
             const filteredList = getFilteredStations();
+            const popupMaxW = isMobileView() ? 245 : 320;
 
-            // วาดหมุดบนแผนที่จาก filteredList ชุดเดียวกับ Sidebar เสมอ (หมวดเฝ้าระวังจะแสดงเฉพาะหมุดเหลืองและแดง)
             filteredList.forEach(stn => {
                 const markerColor = stn.marker_status || (stn.has_error ? 'red' : 'green');
 
@@ -503,7 +567,8 @@
                 const wdirCompass = degToCompass(stn.wind_dir);
                 const wdirStr = (stn.wind_dir !== null && stn.wind_dir !== undefined) ? `${stn.wind_dir}° ${wdirCompass ? '(' + wdirCompass + ')' : ''}`.trim() : '-';
                 const presStr = (stn.pressure !== null && stn.pressure !== undefined) ? `${stn.pressure} hPa` : '-';
-                const visLine = (stn.vis !== null && stn.vis !== undefined) ? `<br>👁 <b>ทัศนวิสัย:</b> ${stn.vis} m` : '';
+                // 📌 ซ่อนทัศนวิสัยที่เป็น 0 m (แสดงเฉพาะสถานีที่มีค่า > 0 เท่านั้น)
+                const visLine = (stn.vis !== null && stn.vis !== undefined && Number(stn.vis) > 0) ? `<br>👁 <b>ทัศนวิสัย:</b> ${stn.vis} m` : '';
                 const timeStr = stn.updated_at ? `<br><small style="color:#777;">🕒 ข้อมูลเวลา: ${stn.updated_at}</small>` : '';
 
                 const popupHTML = `
@@ -518,7 +583,7 @@
                 `;
 
                 const marker = L.marker([stn.lat, stn.lon], {icon: icon})
-                    .bindPopup(popupHTML)
+                    .bindPopup(popupHTML, { maxWidth: popupMaxW, autoPanPadding: [20, 20] })
                     .addTo(markersLayer);
                 stationMarkers[stn.id] = marker;
             });
@@ -590,7 +655,7 @@
                 document.getElementById('count-offline').textContent = countOffline;
 
                 renderMapAndSidebar();
-                document.getElementById('last-update').innerHTML = `⏰ อัปเดตล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
+                document.getElementById('last-update').innerHTML = `⏰ อัปเดต: ${new Date().toLocaleTimeString('th-TH')}`;
             } catch (error) {
                 console.error("โหลดข้อมูลไม่สำเร็จ:", error);
             }
