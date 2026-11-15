@@ -2,8 +2,16 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AWS Monitor Map Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TMD South Monitor</title>
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TMD Monitor">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230d6efd'/%3E%3Ccircle cx='256' cy='256' r='150' fill='none' stroke='%23ffffff' stroke-width='22' stroke-opacity='0.35'/%3E%3Ccircle cx='256' cy='256' r='90' fill='none' stroke='%23ffffff' stroke-width='22' stroke-opacity='0.65'/%3E%3Cpath d='M256 256 L385 160 A160 160 0 0 1 405 290 Z' fill='%232ecc71' opacity='0.85'/%3E%3Ccircle cx='256' cy='256' r='28' fill='%23ffc107'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230d6efd'/%3E%3Ccircle cx='256' cy='256' r='150' fill='none' stroke='%23ffffff' stroke-width='22' stroke-opacity='0.35'/%3E%3Ccircle cx='256' cy='256' r='90' fill='none' stroke='%23ffffff' stroke-width='22' stroke-opacity='0.65'/%3E%3Cpath d='M256 256 L385 160 A160 160 0 0 1 405 290 Z' fill='%232ecc71' opacity='0.85'/%3E%3Ccircle cx='256' cy='256' r='28' fill='%23ffc107'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -222,19 +230,114 @@
         }
 
         /* 📱 ปรับแต่งสำหรับหน้าจอมือถือ: ให้ Sidebar ทั้งแผงเลื่อนขึ้นลงได้ ไม่ล็อก Header ตายตัวจนเบียดรายการสถานี */
+
+        /* 📱 แถบเมนูด้านล่างแบบแอปมือถือ (Unified App Bottom Navigation Bar) */
+        #aws-view-wrapper {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            height: calc(100vh - 56px);
+            height: calc(100dvh - 56px);
+            overflow: hidden;
+        }
+        #radar-view-wrapper {
+            display: none;
+            flex: 1;
+            width: 100%;
+            height: calc(100vh - 56px);
+            height: calc(100dvh - 56px);
+            background: var(--bg-color);
+            overflow: hidden;
+        }
+        #radar-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: var(--bg-color);
+        }
+        .app-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--sidebar-border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 4000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.12);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-sizing: border-box;
+        }
+        .app-nav-btn {
+            flex: 1;
+            height: 100%;
+            border: none;
+            background: transparent;
+            color: var(--meta-color);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .app-nav-btn .nav-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+        .app-nav-btn.active {
+            color: #0d6efd;
+        }
+        body.dark-mode .app-nav-btn.active {
+            color: #4dabf7;
+        }
+        .app-nav-btn.active::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            width: 45%;
+            height: 3px;
+            background: #0d6efd;
+            border-radius: 0 0 4px 4px;
+        }
+        .install-pwa-btn {
+            display: none;
+            background: #198754;
+            color: #fff !important;
+            border-radius: 18px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            margin-right: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
                 height: 100dvh;
             }
+            #aws-view-wrapper {
+                flex-direction: column;
+            }
             #map-container {
                 flex: none;
-                height: 44%;
+                height: 46%;
                 width: 100%;
             }
             #sidebar {
                 flex: none;
-                height: 56%;
+                height: 54%;
                 width: 100%;
                 border-left: none;
                 border-top: 2px solid var(--sidebar-border);
@@ -355,7 +458,8 @@
         }
     </style>
 </head>
-<body>
+<body style="flex-direction: column;">
+    <div id="aws-view-wrapper">
     <div id="map-container">
         <div id="map"></div>
         <div class="radar-overlay-box" id="radar-ctrl-box">
@@ -424,6 +528,25 @@
             <p style="text-align: center; color: var(--meta-color);">กำลังโหลดข้อมูล...</p>
         </div>
     </div>
+    </div><!-- end #aws-view-wrapper -->
+
+    <!-- 📡 หน้าต่างที่ 2: ระบบติดตามสถานะเรดาร์และดูภาพย้อนหลัง (Radar Dashboard) -->
+    <div id="radar-view-wrapper">
+        <iframe id="radar-iframe" data-src="https://sira998tt.github.io/radar-dashboard/" title="TMD Radar Monitor"></iframe>
+    </div>
+
+    <!-- 📱 แถบเมนูสลับหน้าแอปด้านล่าง (Unified App Bottom Navigation) -->
+    <nav class="app-bottom-nav">
+        <button class="app-nav-btn active" id="nav-tab-aws" onclick="switchAppTab('aws')">
+            <span class="nav-icon">📍</span>
+            <span>สถานีตรวจอากาศ (AWS)</span>
+        </button>
+        <button class="app-nav-btn" id="nav-tab-radar" onclick="switchAppTab('radar')">
+            <span class="nav-icon">📡</span>
+            <span>สถานะเรดาร์ & ย้อนหลัง</span>
+        </button>
+        <button class="install-pwa-btn" id="install-pwa-btn" onclick="installPWA()">📲 ติดตั้งแอป</button>
+    </nav>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -857,6 +980,55 @@
             } catch (error) {
                 console.error("โหลดข้อมูลไม่สำเร็จ:", error);
             }
+        }
+
+
+        // 📱 ฟังก์ชันสลับแท็บระหว่าง AWS Monitor และ Radar Monitor ภายในแอปเดียว
+        function switchAppTab(tabName) {
+            const awsWrap = document.getElementById('aws-view-wrapper');
+            const radarWrap = document.getElementById('radar-view-wrapper');
+            const btnAws = document.getElementById('nav-tab-aws');
+            const btnRadar = document.getElementById('nav-tab-radar');
+            const radarIframe = document.getElementById('radar-iframe');
+
+            if (tabName === 'radar') {
+                awsWrap.style.display = 'none';
+                radarWrap.style.display = 'block';
+                btnAws.classList.remove('active');
+                btnRadar.classList.add('active');
+                if (!radarIframe.getAttribute('src')) {
+                    radarIframe.setAttribute('src', radarIframe.getAttribute('data-src'));
+                }
+            } else {
+                radarWrap.style.display = 'none';
+                awsWrap.style.display = 'flex';
+                btnRadar.classList.remove('active');
+                btnAws.classList.add('active');
+                setTimeout(() => map.invalidateSize(), 100);
+            }
+        }
+
+        // 📲 ระบบรองรับการติดตั้งเป็น Web App (PWA) ลงหน้าจอมือถือ
+        let deferredPrompt = null;
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.getElementById('install-pwa-btn');
+            if (btn) btn.style.display = 'inline-block';
+        });
+        async function installPWA() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                document.getElementById('install-pwa-btn').style.display = 'none';
+            }
+            deferredPrompt = null;
         }
 
         fetchMapData();
