@@ -29,10 +29,11 @@
         }
 
         body.dark-mode .base-map-tiles,
+        .radar-dark-tiles,
         body.dark-mode .leaflet-control-zoom-in,
         body.dark-mode .leaflet-control-zoom-out,
         body.dark-mode .leaflet-control-attribution {
-            filter: invert(100%) hue-rotate(180deg) brightness(98%) contrast(92%);
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(95%);
         }
 
         body { font-family: 'Tahoma', sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background: var(--bg-color); color: var(--text-color); transition: all 0.3s; }
@@ -426,18 +427,17 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. แผนที่คมชัดสูง @2x (ตัวอักษรใหญ่ คมกริบ เหมาะกับดูเรดาร์ในโหมดสว่าง)
-        const hdStreetMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
+        // 1. แผนที่ถนนคมชัดสูง (Google Streets - ตัวหนังสือภาษาไทยคมกริบ ไม่ต้องใช้ API Key)
+        const hdStreetMap = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=th', {
+            attribution: '&copy; Google Maps',
+            maxZoom: 20
         });
 
-        // 2. แผนที่โหมดมืดแท้ @2x (พื้นหลังเข้มคมชัด ไม่ใช้ฟิลเตอร์กลับสี ทำให้สีเรดาร์สดคมที่สุด)
-        const hdDarkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
+        // 2. แผนที่โหมดมืดคมชัด (ใช้ Google Streets กลับสีเฉพาะแผ่นแผนที่ ไม่กลับสีเรดาร์)
+        const hdDarkMap = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=th', {
+            attribution: '&copy; Google Maps',
+            className: 'radar-dark-tiles',
+            maxZoom: 20
         });
 
         // 3. แผนที่มาตรฐาน OpenStreetMap
@@ -449,12 +449,18 @@
         });
 
         // 4. ภาพถ่ายดาวเทียมพร้อมชื่อสถานที่ (ซูมลึกได้ชัด ไม่ขึ้นจอเทา)
-        const satelliteMap = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        const satelliteMap = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&hl=th', {
             attribution: '&copy; Google Hybrid',
             maxZoom: 20
         });
 
-        // 5. แผนที่ภูมิประเทศและแนวเทือกเขา
+        // 5. แผนที่ภูมิประเทศและแนวเทือกเขาความละเอียดสูง (Google Terrain ภาษาไทย)
+        const googleTerrainMap = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}&hl=th', {
+            attribution: '&copy; Google Terrain',
+            maxZoom: 20
+        });
+
+        // 6. แผนที่เส้นชั้นความสูง (OpenTopoMap)
         const topoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenTopoMap',
             maxNativeZoom: 16,
@@ -476,9 +482,10 @@
         const baseMaps = {
             "✨ แผนที่คมชัดสูง (HD)": hdStreetMap,
             "🌑 แผนที่มืดแท้ (Radar Dark)": hdDarkMap,
-            "🗺️ OpenStreetMap ปกติ": osmMap,
+            "⛰️ ภูมิประเทศ + เทือกเขา (HD)": googleTerrainMap,
+            "🧭 เส้นชั้นความสูง (Topo)": topoMap,
             "🛰️ ดาวเทียม + ชื่อสถานที่": satelliteMap,
-            "⛰️ ภูมิประเทศ (เทือกเขา)": topoMap
+            "🗺️ OpenStreetMap ปกติ": osmMap
         };
         L.control.layers(baseMaps).addTo(map);
 
