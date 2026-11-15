@@ -490,16 +490,31 @@
                 radarTunnelUrl = `http://${location.hostname}:8080`;
                 return;
             }
-            if (allStationsData.length > 0 && allStationsData[0].radar_tunnel_url) {
-                radarTunnelUrl = allStationsData[0].radar_tunnel_url.replace(/\/$/, '');
-            }
+            let candidates = [];
             try {
                 const res = await fetch('https://raw.githubusercontent.com/sira998tt/radar-dashboard/main/data.json?t=' + Date.now(), { cache: 'no-store' });
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.archive_base_url) radarTunnelUrl = data.archive_base_url.replace(/\/$/, '');
+                    if (data.archive_base_url) candidates.push(data.archive_base_url.replace(/\/$/, ''));
                 }
             } catch (e) {}
+            if (allStationsData.length > 0 && allStationsData[0].radar_tunnel_url) {
+                const u = allStationsData[0].radar_tunnel_url.replace(/\/$/, '');
+                if (u && !candidates.includes(u)) candidates.push(u);
+            }
+            for (const cand of candidates) {
+                try {
+                    const ctrl = new AbortController();
+                    const tid = setTimeout(() => ctrl.abort(), 4000);
+                    const r = await fetch(`${cand}/api/status?t=${Date.now()}`, { signal: ctrl.signal, cache: 'no-store' });
+                    clearTimeout(tid);
+                    if (r.ok) {
+                        radarTunnelUrl = cand;
+                        return;
+                    }
+                } catch (e) {}
+            }
+            if (candidates.length > 0) radarTunnelUrl = candidates[0];
         }
 
         async function onRadarOverlayChange() {
@@ -547,7 +562,7 @@
                 const spec = RADAR_BOUNDS_SPECS[code];
                 if (!spec) return;
                 const bounds = getRadarBounds(spec.lat, spec.lon);
-                const imgUrl = `${radarTunnelUrl}/api/overlay?station=${code}&v=2&t=${cacheBuster}`;
+                const imgUrl = `${radarTunnelUrl}/api/overlay?station=${code}&v=4&t=${cacheBuster}`;
                 L.imageOverlay(imgUrl, bounds, { opacity: radarOpacity, interactive: false }).addTo(radarLayerGroup);
             });
         }
