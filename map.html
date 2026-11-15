@@ -426,42 +426,77 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        if (localStorage.getItem('theme') === 'dark') {
+        // 1. แผนที่คมชัดสูง @2x (ตัวอักษรใหญ่ คมกริบ เหมาะกับดูเรดาร์ในโหมดสว่าง)
+        const hdStreetMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        });
+
+        // 2. แผนที่โหมดมืดแท้ @2x (พื้นหลังเข้มคมชัด ไม่ใช้ฟิลเตอร์กลับสี ทำให้สีเรดาร์สดคมที่สุด)
+        const hdDarkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        });
+
+        // 3. แผนที่มาตรฐาน OpenStreetMap
+        const osmMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            className: 'base-map-tiles',
+            maxNativeZoom: 18,
+            maxZoom: 19
+        });
+
+        // 4. ภาพถ่ายดาวเทียมพร้อมชื่อสถานที่ (ซูมลึกได้ชัด ไม่ขึ้นจอเทา)
+        const satelliteMap = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            attribution: '&copy; Google Hybrid',
+            maxZoom: 20
+        });
+
+        // 5. แผนที่ภูมิประเทศและแนวเทือกเขา
+        const topoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenTopoMap',
+            maxNativeZoom: 16,
+            maxZoom: 19
+        });
+
+        const initialIsDark = localStorage.getItem('theme') === 'dark';
+        if (initialIsDark) {
             document.body.classList.add('dark-mode');
             document.querySelector('.theme-toggle').innerHTML = '☀️ โหมดสว่าง';
         }
+
+        const map = L.map('map', {
+            center: [8.0, 99.5],
+            zoom: 7,
+            layers: [initialIsDark ? hdDarkMap : hdStreetMap]
+        });
+
+        const baseMaps = {
+            "✨ แผนที่คมชัดสูง (HD)": hdStreetMap,
+            "🌑 แผนที่มืดแท้ (Radar Dark)": hdDarkMap,
+            "🗺️ OpenStreetMap ปกติ": osmMap,
+            "🛰️ ดาวเทียม + ชื่อสถานที่": satelliteMap,
+            "⛰️ ภูมิประเทศ (เทือกเขา)": topoMap
+        };
+        L.control.layers(baseMaps).addTo(map);
 
         function toggleTheme() {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
             document.querySelector('.theme-toggle').innerHTML = isDark ? '☀️ โหมดสว่าง' : '🌙 โหมดมืด';
+
+            // สลับระหว่างแผนที่ HD สว่าง กับ Radar Dark @2x อัตโนมัติ (หากไม่ได้เปิดดาวเทียม/ภูมิประเทศค้างไว้)
+            if (isDark && map.hasLayer(hdStreetMap)) {
+                map.removeLayer(hdStreetMap);
+                hdDarkMap.addTo(map);
+            } else if (!isDark && map.hasLayer(hdDarkMap)) {
+                map.removeLayer(hdDarkMap);
+                hdStreetMap.addTo(map);
+            }
         }
-
-        const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap',
-            className: 'base-map-tiles',
-            maxNativeZoom: 18,
-            maxZoom: 19
-        });
-        
-        const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '&copy; Esri',
-            maxNativeZoom: 17,
-            maxZoom: 19
-        });
-
-        const map = L.map('map', {
-            center: [8.0, 99.5],
-            zoom: 7,
-            layers: [streetMap]
-        });
-
-        const baseMaps = {
-            "🗺️ แผนที่ปกติ": streetMap,
-            "🌍 ดาวเทียม": satelliteMap
-        };
-        L.control.layers(baseMaps).addTo(map);
 
         let radarLayerGroup = L.layerGroup().addTo(map);
         let markersLayer = L.layerGroup().addTo(map);
