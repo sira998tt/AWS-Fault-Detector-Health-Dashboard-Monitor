@@ -1,0 +1,18 @@
+{
+  "name": "TMD South AWS & Radar Monitor",
+  "short_name": "TMD Monitor",
+  "description": "ระบบติดตามสถานะสถานีตรวจอากาศอัตโนมัติ (AWS) และเรดาร์ตรวจอากาศภาคใต้ฝั่งตะวันออก",
+  "start_url": "./map.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#212529",
+  "theme_color": "#0d6efd",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230d6efd'/%3E%3Ccircle cx='256' cy='256' r='150' fill='none' stroke='%23ffffff' stroke-width='22' stroke-opacity='0.35'/%3E%3Ccircle cx='256' cy='256' r='90' fill='none' stroke='%23ffffff' stroke-width='22' stroke-opacity='0.65'/%3E%3Cpath d='M256 256 L385 160 A160 160 0 0 1 405 290 Z' fill='%232ecc71' opacity='0.85'/%3E%3Ccircle cx='256' cy='256' r='28' fill='%23ffc107'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
