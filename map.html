@@ -28,11 +28,12 @@
             --input-bg: #2b3035;
         }
 
-        body.dark-mode .leaflet-layer,
+        /* 📌 ใช้ฟิลเตอร์โหมดมืดเฉพาะแผ่นแผนที่พื้นหลัง (ไม่ให้กลับสีภาพเรดาร์) */
+        body.dark-mode .leaflet-tile-pane,
         body.dark-mode .leaflet-control-zoom-in,
         body.dark-mode .leaflet-control-zoom-out,
         body.dark-mode .leaflet-control-attribution {
-            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+            filter: invert(100%) hue-rotate(180deg) brightness(98%) contrast(95%);
         }
 
         body { font-family: 'Tahoma', sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background: var(--bg-color); color: var(--text-color); transition: all 0.3s; }
@@ -439,11 +440,15 @@
         }
 
         const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
+            attribution: '&copy; OpenStreetMap',
+            detectRetina: true,
+            maxZoom: 19
         });
         
         const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '&copy; Esri'
+            attribution: '&copy; Esri',
+            detectRetina: true,
+            maxZoom: 19
         });
 
         const map = L.map('map', {
