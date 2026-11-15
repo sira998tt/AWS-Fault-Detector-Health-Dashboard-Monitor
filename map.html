@@ -64,6 +64,21 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: all 0.3s;
         }
         .theme-toggle:hover { filter: brightness(0.9); }
+
+        .radar-overlay-box {
+            position: absolute; top: 20px; left: 55px; z-index: 1000;
+            background: var(--card-bg); color: var(--text-color);
+            border: 1px solid var(--sidebar-border); padding: 6px 12px;
+            border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .radar-overlay-box select {
+            background: transparent; color: var(--text-color); border: none;
+            font-family: inherit; font-size: 13px; font-weight: bold; outline: none; cursor: pointer;
+        }
+        .radar-overlay-box select option {
+            background: var(--card-bg); color: var(--text-color);
+        }
         
         .leaflet-control-layers {
             margin-top: 60px !important; 
@@ -315,6 +330,16 @@
                 padding: 5px 10px;
                 font-size: 11px;
             }
+            .radar-overlay-box {
+                top: 8px;
+                left: 48px;
+                padding: 4px 8px;
+                gap: 5px;
+            }
+            .radar-overlay-box select {
+                font-size: 11px;
+                max-width: 145px;
+            }
             .leaflet-control-layers {
                 margin-top: 42px !important;
             }
@@ -332,6 +357,18 @@
 <body>
     <div id="map-container">
         <div id="map"></div>
+        <div class="radar-overlay-box" id="radar-ctrl-box">
+            <select id="radar-overlay-select" onchange="onRadarOverlayChange()">
+                <option value="OFF">🚫 ปิดภาพเรดาร์</option>
+                <option value="ALL">🌧️ เรดาร์รวมภาคใต้ (5 สถานี)</option>
+                <option value="CMP_HQ">📡 เรดาร์ชุมพร (HQ)</option>
+                <option value="SRT_HQ">📡 เรดาร์สุราษฎร์ฯ (HQ)</option>
+                <option value="STP_HQ">📡 เรดาร์สทิงพระ (HQ)</option>
+                <option value="HYI_HQ">📡 เรดาร์หาดใหญ่ (HQ)</option>
+                <option value="NRT_HQ">📡 เรดาร์นราธิวาส (HQ)</option>
+            </select>
+            <input type="range" id="radar-opacity" min="20" max="95" value="70" title="ปรับความโปร่งใสเรดาร์" oninput="onRadarOpacityChange(this.value)" style="display:none; width:70px; accent-color:#0d6efd; cursor:pointer;" />
+        </div>
         <button class="theme-toggle" onclick="toggleTheme()">🌙 โหมดมืด</button>
         <div class="legend">
             <h4>สถานะสถานีตรวจอากาศ</h4>
@@ -345,6 +382,7 @@
     <div id="sidebar">
         <div class="sidebar-header">
             <h1>Smart AWS Monitor</h1>
+            <h1>Southern-East Coast Meteorological Center</h1>
         </div>
 
         <div class="summary-dashboard">
@@ -420,10 +458,81 @@
         };
         L.control.layers(baseMaps).addTo(map);
 
+        let radarLayerGroup = L.layerGroup().addTo(map);
         let markersLayer = L.layerGroup().addTo(map);
         let stationMarkers = {};
         let allStationsData = [];
         let currentFilter = 'issues';
+        let radarTunnelUrl = "";
+        let radarOpacity = 0.70;
+
+        const RADAR_BOUNDS_SPECS = {
+            "CMP_HQ": { lat: 10.493, lon: 99.180 },
+            "SRT_HQ": { lat: 9.133,  lon: 99.146 },
+            "STP_HQ": { lat: 7.474,  lon: 100.437 },
+            "HYI_HQ": { lat: 6.929,  lon: 100.435 },
+            "NRT_HQ": { lat: 6.425,  lon: 101.822 }
+        };
+
+        function getRadarBounds(lat, lon) {
+            const dLat = 240.0 / 110.574;
+            const dLon = 240.0 / (111.320 * Math.cos(lat * Math.PI / 180.0));
+            return [[lat - dLat, lon - dLon], [lat + dLat, lon + dLon]];
+        }
+
+        async function syncRadarTunnelUrl() {
+            if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                radarTunnelUrl = `http://${location.hostname}:8080`;
+                return;
+            }
+            if (allStationsData.length > 0 && allStationsData[0].radar_tunnel_url) {
+                radarTunnelUrl = allStationsData[0].radar_tunnel_url.replace(/\/$/, '');
+            }
+            try {
+                const res = await fetch('https://raw.githubusercontent.com/sira998tt/radar-dashboard/main/data.json?t=' + Date.now(), { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.archive_base_url) radarTunnelUrl = data.archive_base_url.replace(/\/$/, '');
+                }
+            } catch (e) {}
+        }
+
+        async function onRadarOverlayChange() {
+            radarLayerGroup.clearLayers();
+            const mode = document.getElementById('radar-overlay-select').value;
+            const slider = document.getElementById('radar-opacity');
+            if (mode === 'OFF') {
+                slider.style.display = 'none';
+                return;
+            }
+            slider.style.display = 'inline-block';
+            if (!radarTunnelUrl) await syncRadarTunnelUrl();
+            if (!radarTunnelUrl) return;
+
+            const targets = (mode === 'ALL') ? Object.keys(RADAR_BOUNDS_SPECS) : [mode];
+            const cacheBuster = Math.floor(Date.now() / 120000);
+            targets.forEach(code => {
+                const spec = RADAR_BOUNDS_SPECS[code];
+                if (!spec) return;
+                const bounds = getRadarBounds(spec.lat, spec.lon);
+                const imgUrl = `${radarTunnelUrl}/api/overlay?station=${code}&t=${cacheBuster}`;
+                L.imageOverlay(imgUrl, bounds, { opacity: radarOpacity, interactive: false }).addTo(radarLayerGroup);
+            });
+        }
+
+        function onRadarOpacityChange(val) {
+            radarOpacity = Number(val) / 100.0;
+            radarLayerGroup.eachLayer(layer => {
+                if (layer.setOpacity) layer.setOpacity(radarOpacity);
+            });
+        }
+
+        setInterval(() => {
+            const sel = document.getElementById('radar-overlay-select');
+            if (sel && sel.value !== 'OFF') {
+                onRadarOverlayChange();
+            }
+        }, 180000);
 
         function isMobileView() {
             return window.innerWidth <= 768;
