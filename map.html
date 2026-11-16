@@ -314,6 +314,24 @@
                 flex-direction: column;
                 height: 100dvh;
             }
+            .app-bottom-nav {
+                flex: 0 0 36px;
+                height: 36px;
+                gap: 6px;
+                padding: 0 6px;
+            }
+            .app-nav-btn {
+                height: 26px;
+                padding: 0 10px;
+                font-size: 11px;
+                white-space: nowrap;
+                gap: 4px;
+            }
+            .install-pwa-btn {
+                padding: 3px 8px;
+                font-size: 10.5px;
+                white-space: nowrap;
+            }
             #aws-view-wrapper {
                 flex-direction: column;
             }
@@ -623,18 +641,20 @@
         let radarTunnelUrl = "";
         let radarOpacity = 0.70;
 
+        // 📌 พิกัดจุดศูนย์กลางและรัศมีจริง (km) ที่สอบเทียบกับจุดอ้างอิงชายฝั่งครบทั้ง 5 สถานีแล้ว
         const RADAR_BOUNDS_SPECS = {
-            "CMP_HQ": { lat: 10.490, lon: 99.178 },
-            "SRT_HQ": { lat: 9.131,  lon: 99.144 },
-            "STP_HQ": { lat: 7.472,  lon: 100.435 },
-            "HYI_HQ": { lat: 6.927,  lon: 100.432 },
-            "NRT_HQ": { lat: 6.416,  lon: 101.805 }
+            "CMP_HQ": { lat: 10.499, lon: 99.193, radiusKm: 237.4 },
+            "SRT_HQ": { lat: 9.128,  lon: 99.162, radiusKm: 237.2 },
+            "STP_HQ": { lat: 7.452,  lon: 100.438, radiusKm: 235.5 },
+            "HYI_HQ": { lat: 6.941,  lon: 100.416, radiusKm: 239.8 },
+            "NRT_HQ": { lat: 6.416,  lon: 101.805, radiusKm: 236.5 }
         };
 
-        function getRadarBounds(lat, lon) {
-            const dLat = 240.0 / 110.574;
-            const dLon = 240.0 / (111.320 * Math.cos(lat * Math.PI / 180.0));
-            return [[lat - dLat, lon - dLon], [lat + dLat, lon + dLon]];
+        function getRadarBounds(spec) {
+            const rKm = spec.radiusKm || 236.5;
+            const dLat = rKm / 110.574;
+            const dLon = rKm / (111.320 * Math.cos(spec.lat * Math.PI / 180.0));
+            return [[spec.lat - dLat, spec.lon - dLon], [spec.lat + dLat, spec.lon + dLon]];
         }
 
         async function syncRadarTunnelUrl() {
@@ -692,7 +712,9 @@
                             L.tileLayer(`${rvHost}${latestPath}/256/{z}/{x}/{y}/2/1_1.png`, {
                                 opacity: radarOpacity,
                                 maxNativeZoom: 7,
-                                maxZoom: 19,
+                                maxZoom: 20,
+                                zIndex: 500,
+                                pane: 'overlayPane',
                                 interactive: false,
                                 attribution: 'RainViewer'
                             }).addTo(radarLayerGroup);
@@ -713,8 +735,8 @@
             targets.forEach(code => {
                 const spec = RADAR_BOUNDS_SPECS[code];
                 if (!spec) return;
-                const bounds = getRadarBounds(spec.lat, spec.lon);
-                const imgUrl = `${radarTunnelUrl}/api/overlay?station=${code}&v=4&t=${cacheBuster}`;
+                const bounds = getRadarBounds(spec);
+                const imgUrl = `${radarTunnelUrl}/api/overlay?station=${code}&v=5&t=${cacheBuster}`;
                 L.imageOverlay(imgUrl, bounds, { opacity: radarOpacity, interactive: false }).addTo(radarLayerGroup);
             });
         }
